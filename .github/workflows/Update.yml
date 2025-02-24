@@ -30,16 +30,16 @@ jobs:
         # sed -i '1i #EXTM3U' CCTV.m3u
         # sed -i '/^\s*$/d' CCTV.m3u
         # 添加额外的央视源
-        rm -f CCTV1.m3u && wget https://m3u.ibert.me/fmml_ipv6.m3u -O CCTV1.m3u
+        rm -f CCTV1.m3u && wget https://m3u.ibert.me/fmml_ipv6.m3u -O CCTV.m3u
         if [ ! -f "CCTV1.m3u" ]; then
-          echo "Failed to download CCTV1.m3u"
+          echo "Failed to download CCTV.m3u"
           exit 1
         fi
-        sed -i -n '/央视/,+1p' CCTV1.m3u
-        sed -i '1i #EXTM3U' CCTV1.m3u  
-        sed -i '/^\s*$/d' CCTV1.m3u
-        cat CCTV1.m3u >> CCTV.m3u  
-        rm -f CCTV1.m3u
+        sed -i -n '/央视/,+1p' CCTV.m3u
+        sed -i '1i #EXTM3U' CCTV.m3u  
+        sed -i '/^\s*$/d' CCTV.m3u
+        cat CCTV.m3u >> CCTV.m3u  
+        rm -f CCTV.m3u
         # 卫视源
         rm -f CNTV.m3u && touch CNTV.m3u
         # 下载并处理CNTV1.m3u（卫视）
