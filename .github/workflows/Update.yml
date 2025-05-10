@@ -1,0 +1,70 @@
+name: Update
+
+on:
+  push:
+  schedule:
+    - cron: '0 */4 * * *'
+
+env:
+  TZ: Asia/Shanghai
+
+jobs:
+  Update:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: GetTime
+      run: echo "GET_TIME=$(date +'%Y-%m-%d %H:%M:%S CST')" >> $GITHUB_ENV
+
+    - name: Update
+      run: |
+        # 央视源处理
+        rm -f CCTV.m3u
+        wget https://m3u.ibert.me/fmml_ipv6.m3u -O CCTV.m3u
+        if [ ! -f "CCTV.m3u" ]; then
+          echo "Failed to download CCTV.m3u"
+          exit 1
+        fi
+        sed -i -n '/央视/,+1p' CCTV.m3u
+        sed -i '1i #EXTM3U' CCTV.m3u
+        sed -i '/^\s*$/d' CCTV.m3u
+
+        # 卫视源处理
+        # 初始化CNTV.m3u
+        rm -f CNTV.m3u && touch CNTV.m3u
+        
+        # 处理卫视源
+        wget https://m3u.ibert.me/fmml_ipv6.m3u -O CNTV_temp.m3u
+        sed -n '/卫视/,+1p' CNTV_temp.m3u >> CNTV.m3u
+        sed -n '/数字/,+1p' CNTV_temp.m3u >> CNTV.m3u
+        sed -n '/百视/,+1p' CNTV_temp.m3u >> CNTV.m3u
+        rm -f CNTV_temp.m3u
+        
+        # 添加M3U头并清理
+        sed -i '1i #EXTM3U' CNTV.m3u
+        sed -i '/^\s*$/d' CNTV.m3u
+
+        # 整合源
+        echo "#EXTM3U" > IPTV.m3u
+        cat CCTV.m3u >> IPTV.m3u
+        cat CNTV.m3u >> IPTV.m3u
+        sed -i '/^\s*$/d' IPTV.m3u
+
+        # 节目源
+        wget https://epg.112114.xyz/pp.xml -O EPG.xml
+        echo "Auto Update IPTV in ${GET_TIME}" > README.md
+
+    - name: Clean
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git checkout --orphan latest_branch
+        git add -A
+        git commit -am "Update ${GET_TIME}"
+        git branch -D main
+        git branch -m main
+    
+    - name: Push
+      run: git push -f origin main
